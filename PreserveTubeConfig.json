@@ -1,17 +1,17 @@
 {
-  "id": "9c87a5e2-3f41-4b8a-9d2e-7f6c8a1b3d4e",
+  "id": "fc8ab98d-310e-4033-9369-869980cb7ecd",
   "name": "PreserveTube",
   "platformUrl": "https://preservetube.com/donate",
   "description": "PreserveTube is a time capsule for YouTube videos! It allows you to preserve any YouTube video, creating a snapshot that will always be available even if the original video disappears or is taken down.",
-  "author": "Stefan Cruz",
-  "authorUrl": "",
-  "repositoryUrl": "https://github.com/stefancruz/grayjay-plugin-preservetube",
-  "sourceUrl": "https://stefancruz.github.io/grayjay-plugin-preservetube/PreserveTubeConfig.json",
+  "author": "Freeb, Stefan Cruz",
+  "authorUrl": "https://github.com/b-risk",
+  "repositoryUrl": "https://github.com/b-risk/grayjay-plugin-preservetube",
+  "sourceUrl": "https://b-risk.github.io/grayjay-plugin-preservetube/PreserveTubeConfig.json",
   "scriptUrl": "./PreserveTubeScript.js",
-  "iconUrl": "./PreserveTubeIcon.png",
-  "version": 2,
-  "scriptSignature": "T+IuddcsyjE1HMmGUPbTtFhtSKyLdKtd8cvL4nPGabPthiI+6uwI6ZUc5OePxzsp9IfkaZp8EDaEGSLXUG8VZ+5zmG0uCMq94jncxGzKn2kIWvcTAWzL8sACdADFKaDb5KX7XIW/Nt+6HG3XGJSL7lcWsbeakX29ch0PeKuIrSuRmXI8wApSjPclMY2kwHH6cunD8OZAo8hvBebEYmyKKgkOO+tzbf6KG4JeCobs0Sf1TioI1zS5E6cxGOV6zSApjfe6C3QZYp9Dl/m2Qs8NAoK6ji/48MaHu9t1oe4CYVvni6+i2NDC6KUWeBFra/1lseb8L360SOAWHG2HwS9AuQ==",
-  "scriptPublicKey": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAs5shGUhmdmWJtDag0oDSV8KiCvAOmXBOxAVzWQs4uxLJ7IG6p99YlyTHnEi3B1VuIhUz/FcSkL7g/f20JQweNLTCOGlUR44+5dbaP8ZlfdbAmXYwie7nNKJX6rnXw+G9u9QQ1DBQZttIlX+d6acwldAqftVA+GUiN5uHWgtAHnFkTNZMSF3h4vq1ucJdF1CpWcPRW74/S4r841Afs29CAICtcduDoTaX4v4b/wrzDw0coYaEwlk2Gb8rRuD7ZV7G+Df1yZtFWhnMB7VhiHGxxIqoVEFoTZ5/FNhw0HAiMlWPowxInm/zwyI0HunDFB3gwilsPBtnA1WvOvbChVh5fQIDAQAB",
+  "iconUrl": "./Imgs/PreserveTubeIcon.png",
+  "version": 5,
+  "scriptSignature": "",
+  "scriptPublicKey": "",
   "packages": [
     "Http",
     "DOMParser"
@@ -19,12 +19,29 @@
   "allowEval": false,
   "allowUrls": [
     "preservetube.com",
-    ".archive.party"
+    ".archive.party",
+    "yt3.googleusercontent.com"
   ],
   "captcha": {
     "userAgent": "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.6778.200 Mobile Safari/537.36",
     "captchaUrl": null,
     "completionUrl": "https://preservetube.com/watch?*"
   },
-  "settings": []
+  "settings": [
+    {
+      "variable": "youtubeChannelSeparation",
+      "name": "Enable YouTube Channel Separation",
+      "description": "When enabled, YouTube channel URLs will be treated as PreserveTube channels with separated IDs (prefixed with 'preservetube://') to avoid conflicts with the YouTube plugin. Disable to keep YouTube channel URLs pointing to the YouTube plugin instead.",
+      "type": "Boolean",
+      "default": "true"
+    },
+    {
+      "variable": "usePreserveTubeArchiving",
+      "name": "Enable Archiving to PreserveTube",
+      "description": "When enabled, unarchived YouTube videos will prompt you to archive them on PreserveTube via captcha. Disabled by default so unarchived videos open in the YouTube plugin instead.",
+      "type": "Boolean",
+      "default": "false",
+      "warningDialog": "By enabling this, you agree to only use this feature for videos that you genuinely believe should be preserved long term."
+    }
+  ]
 }
