@@ -61,7 +61,7 @@ source.getHome = function() {
     const html = makeGetRequest(url, false);
 
     if (!html) {
-        return new VideoPager([], false);
+        throw new ScriptException("Failed to fetch home page from PreserveTube");
     }
 
     const videoCards = parseVideoCardsFromHtml(html);
@@ -109,7 +109,7 @@ source.search = function(query, type, order, filters) {
     const html = makeGetRequest(url, false);
 
     if (!html) {
-        return new VideoPager([], false);
+        throw new ScriptException("Failed to search PreserveTube: " + query);
     }
 
     const videoCards = parseVideoCardsFromHtml(html);
@@ -157,7 +157,7 @@ source.searchChannels = function(query, continuationToken) {
     const html = makeGetRequest(url, false);
 
     if (!html) {
-        return new ChannelPager([], false);
+        throw new ScriptException("Failed to search PreserveTube channels: " + query);
     }
 
     const videoCards = parseVideoCardsFromHtml(html);
@@ -337,13 +337,42 @@ source.getChannel = function(url) {
     let avatar = "";
 
     if (htmlResult && htmlResult.error) {
-        log(`Channel page not found for ${channelId}: HTTP ${htmlResult.code}`);
+        throw new ScriptException(`PreserveTube channel not found: ${channelId} (HTTP ${htmlResult.code})`);
     } else if (htmlResult) {
         // Parse channel info from HTML
-        // Look for channel name in h1 or similar
-        const nameMatch = htmlResult.match(/<h1[^>]*>([^<]+)<\/h1>/i);
-        if (nameMatch) {
-            channelName = nameMatch[1].trim();
+        // Try each name pattern until one matches
+        // Pattern 1: h1 tag
+        let nameFound = false;
+        const h1Match = htmlResult.match(/<h1[^>]*>([^<]+)<\/h1>/i);
+        if (h1Match) {
+            channelName = h1Match[1].trim();
+            nameFound = true;
+        }
+
+        // Pattern 2: title tag (strip " | PreserveTube" suffix)
+        if (!nameFound) {
+            const titleMatch = htmlResult.match(/<title>([^|]+)\s*\|/i);
+            if (titleMatch) {
+                channelName = titleMatch[1].trim();
+                nameFound = true;
+            }
+        }
+
+        // Pattern 3: og:title meta tag
+        if (!nameFound) {
+            const ogMatch = htmlResult.match(/<meta[^>]*property="og:title"[^>]*content="([^"]*)"[^>]*>/i);
+            if (ogMatch) {
+                channelName = ogMatch[1].replace(/\s*\|\s*PreserveTube\s*$/i, '').trim();
+                nameFound = true;
+            }
+        }
+
+        // Pattern 4: channel-name link on the page
+        if (!nameFound) {
+            const channelLinkMatch = htmlResult.match(/<a[^>]*href="\/channel\/(@?[\w\-_]+)"[^>]*>\s*([^<]+?)\s*<\/a>/i);
+            if (channelLinkMatch) {
+                channelName = channelLinkMatch[2].trim();
+            }
         }
 
         // Look for channel avatar - try multiple patterns
@@ -369,10 +398,19 @@ source.getChannel = function(url) {
             }
         }
 
-        // Pattern 4: first img tag that isn't a video thumbnail (channel avatar on channel page)
+        // Pattern 4: yt3.googleusercontent.com image (channel avatar on channel page)
         if (!avatar) {
-            const firstImgMatch = htmlResult.match(/<img[^>]+src="(https:\/\/yt3\.googleusercontent\.com[^"]*)"/i);
-            if (firstImgMatch) {
+            const ytImgMatch = htmlResult.match(/<img[^>]+src="(https:\/\/yt3\.googleusercontent\.com[^"]*)"/i);
+            if (ytImgMatch) {
+                avatar = ytImgMatch[1];
+            }
+        }
+
+        // Pattern 5: first img that isn't a thumbnail
+        if (!avatar) {
+            const firstImgMatch = htmlResult.match(/<img[^>]+src="([^"]+)"[^>]*>/i);
+            // Only use it if it's not a thumbnail
+            if (firstImgMatch && firstImgMatch[1] && !firstImgMatch[0].includes('class="thumbnail"')) {
                 avatar = firstImgMatch[1];
             }
         }
@@ -415,12 +453,17 @@ source.getChannelContents = function(url, type, order, filters) {
     const channelId = extractChannelId(url);
 
     if (!channelId) {
-        return new VideoPager([], false);
+        throw new ScriptException("Invalid channel URL for contents: " + url);
     }
 
     // Try the /videos endpoint first for archived-only videos
     let channelUrl = `${PLATFORM_BASE_URL}/channel/${channelId}/videos`;
-    let html = makeGetRequest(channelUrl, false);
+    let html = null;
+    try {
+        html = makeGetRequest(channelUrl, false);
+    } catch (e) {
+        log(`Channel /videos page failed, trying main page: ${e.message}`);
+    }
 
     // If that fails, try the main channel page
     if (!html) {
@@ -429,7 +472,7 @@ source.getChannelContents = function(url, type, order, filters) {
     }
 
     if (!html) {
-        return new VideoPager([], false);
+        throw new ScriptException("Failed to fetch channel contents from PreserveTube: " + channelId);
     }
 
     const videoCards = parseVideoCardsFromHtml(html);
@@ -577,15 +620,19 @@ function makeGetRequest(url, parseJson = true, returnError = false) {
             if (returnError) {
                 return { error: true, code: resp.code, body: resp.body };
             }
-            return null;
+            throw new ScriptException(`PreserveTube request failed: ${url} (HTTP ${resp.code})`);
         }
         if (parseJson) {
             return JSON.parse(resp.body);
         }
         return resp.body;
     } catch (e) {
+        if (e instanceof ScriptException) throw e;
         log(`Request error: ${e.message}`);
-        return null;
+        if (returnError) {
+            return { error: true, code: 0, body: e.message };
+        }
+        throw new ScriptException(`PreserveTube request error: ${url} - ${e.message}`);
     }
 }
 
