@@ -164,9 +164,13 @@ source.searchChannels = function(query, continuationToken) {
     const seenChannels = new Set();
     const channels = [];
 
+    const queryLower = query.toLowerCase();
+
     for (const card of videoCards) {
         if (!card.channel || seenChannels.has(card.channel.id)) continue;
         seenChannels.add(card.channel.id);
+
+        if (!card.channel.name.toLowerCase().includes(queryLower)) continue;
 
         channels.push(new PlatformChannel({
             id: createChannelPlatformID(card.channel.id),
