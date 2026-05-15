@@ -1,7 +1,7 @@
 {
   "id": "fc8ab98d-310e-4033-9369-869980cb7ecd",
   "name": "PreserveTube",
-  "platformUrl": "https://preservetube.com/donate",
+  "platformUrl": "https://preservetube.com/",
   "description": "PreserveTube is a time capsule for YouTube videos! It allows you to preserve any YouTube video, creating a snapshot that will always be available even if the original video disappears or is taken down.",
   "author": "Freeb, Stefan Cruz",
   "authorUrl": "https://github.com/b-risk",
@@ -26,6 +26,16 @@
     "userAgent": "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.6778.200 Mobile Safari/537.36",
     "captchaUrl": null,
     "completionUrl": "https://preservetube.com/watch?*"
+  },
+  "changelog": {
+    "5": [
+      "Rewrote getContentDetails to scrape HTML instead of blocked JSON API",
+      "Added YouTube channel separation setting with ID prefixing",
+      "Added archiving toggle (off by default) with warning dialog",
+      "Fixed channel avatar parsing from yt3.googleusercontent.com",
+      "Rewrote parseVideoCardsFromHtml with proper depth counting",
+      "Added searchChannels support"
+    ]
   },
   "settings": [
     {
