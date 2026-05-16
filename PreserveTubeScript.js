@@ -92,7 +92,7 @@ source.getHome = function() {
 // Source: Search Capabilities
 source.getSearchCapabilities = function() {
     return {
-        types: [Type.Feed.Videos, Type.Feed.Channels],
+        types: ["Video", "Channel"],
         sorts: [],
         filters: []
     };
@@ -140,7 +140,7 @@ source.search = function(query, type, order, filters) {
 // Source: Get Search Channel Contents Capabilities
 source.getSearchChannelContentsCapabilities = function() {
     return {
-        types: [Type.Feed.Videos],
+        types: ["Video"],
         sorts: [],
         filters: []
     };
@@ -187,22 +187,16 @@ source.searchChannels = function(query, continuationToken) {
     return new ChannelPager(channels, false);
 };
 
+// Helper: Build PreserveTube save URL for archiving
+function buildSaveUrl(videoId) {
+    const youtubeUrl = buildYouTubeUrl(videoId);
+    return `${PLATFORM_BASE_URL}/save?url=${encodeURIComponent(youtubeUrl)}`;
+}
+
 // Source: Is Content Details URL (accepts PreserveTube and YouTube video URLs)
 source.isContentDetailsUrl = function(url) {
-    // PreserveTube URLs always match
     if (REGEX_VIDEO_URL.test(url)) return true;
-
-    // YouTube video URLs
-    const videoId = extractVideoId(url);
-    if (!videoId) return false;
-
-    // When archiving toggle is off, only accept YouTube URLs that are already archived
-    if (_settings.usePreserveTubeArchiving !== true) {
-        const resp = http.GET(`${PLATFORM_BASE_URL}/watch?v=${videoId}`, {}, false);
-        return resp.isOk;
-    }
-
-    return true;
+    return !!extractVideoId(url);
 };
 
 // Source: Get Content Details
@@ -217,6 +211,20 @@ source.getContentDetails = function(url) {
     const watchUrl = `${PLATFORM_BASE_URL}/watch?v=${videoId}`;
     const result = makeGetRequest(watchUrl, false, true);
 
+    // Helper: redirect to YouTube when video isn't available on PreserveTube
+    function redirectToYouTube() {
+        return new PlatformNestedMediaContent({
+            id: createPlatformID(videoId),
+            name: videoId,
+            author: createAuthorLink("youtube", "YouTube", "https://youtube.com", ""),
+            datetime: Math.floor(Date.now() / 1000),
+            url: url,
+            contentUrl: buildYouTubeUrl(videoId),
+            contentName: videoId,
+            contentProvider: "Youtube"
+        });
+    }
+
     // Check for HTTP errors
     if (result && result.error) {
         const errorCode = result.code || "unknown";
@@ -224,23 +232,31 @@ source.getContentDetails = function(url) {
         log(`Watch page error [${errorCode}]: ${watchUrl} body: ${errorBody}`);
 
         if (errorCode === 404) {
-            // Video not archived - throw captcha exception to allow archiving
-            const saveUrl = buildSaveUrl(videoId);
-            log(`Video ${videoId} not archived. Redirecting to save page: ${saveUrl}`);
-            throw new CaptchaRequiredException(saveUrl,
-                `<html><body>
-                <h1>Video Not Archived</h1>
-                <p>This video is not yet archived on PreserveTube.</p>
-                <p>Solve the captcha to request archiving. After completion, try playing the video again.</p>
-                <script>window.location.href = "${saveUrl}";</script>
-                </body></html>`
-            );
+            if (_settings.usePreserveTubeArchiving === true) {
+                // Video not archived - throw captcha exception to allow archiving
+                const saveUrl = buildSaveUrl(videoId);
+                log(`Video ${videoId} not archived. Redirecting to save page: ${saveUrl}`);
+                throw new CaptchaRequiredException(saveUrl,
+                    `<html><body>
+                    <h1>Video Not Archived</h1>
+                    <p>This video is not yet archived on PreserveTube.</p>
+                    <p>Solve the captcha to request archiving. After completion, try playing the video again.</p>
+                    <script>window.location.href = "${saveUrl}";</script>
+                    </body></html>`
+                );
+            }
+            log(`Video ${videoId} not archived, redirecting to YouTube`);
+            return redirectToYouTube();
         }
-        throw new ScriptException(`Failed to fetch video details for: ${videoId} (HTTP ${errorCode}: ${errorBody.substring(0, 100)})`);
+
+        bridge.toast("PreserveTube error, falling back to YouTube");
+        log(`Falling back to YouTube for ${videoId} (HTTP ${errorCode})`);
+        return redirectToYouTube();
     }
 
     if (!result) {
-        throw new ScriptException("Failed to fetch video details for (null response): " + videoId);
+        log(`Null response for ${videoId}, falling back to YouTube`);
+        return redirectToYouTube();
     }
 
     const body = result;
@@ -337,7 +353,7 @@ source.getChannel = function(url) {
     let avatar = "";
 
     if (htmlResult && htmlResult.error) {
-        throw new ScriptException(`PreserveTube channel not found: ${channelId} (HTTP ${htmlResult.code})`);
+        log(`PreserveTube channel page error for ${channelId}: HTTP ${htmlResult.code} — using fallback info`);
     } else if (htmlResult) {
         // Parse channel info from HTML
         // Try each name pattern until one matches
@@ -442,7 +458,7 @@ source.getChannel = function(url) {
 // Source: Get Channel Capabilities
 source.getChannelCapabilities = function() {
     return {
-        types: [Type.Feed.Videos],
+        types: ["Video"],
         sorts: [],
         filters: []
     };
@@ -611,40 +627,75 @@ function isYouTubeChannelUrl(url) {
            REGEX_YOUTUBE_CHANNEL_USER.test(url);
 }
 
-// Helper: Make HTTP GET request
-function makeGetRequest(url, parseJson = true, returnError = false) {
+// Helper: Sleep for a given duration (catches error if Thread is not available)
+function sleep(ms) {
     try {
-        const resp = http.GET(url, {});
-        if (!resp.isOk) {
-            log(`Request failed with status ${resp.code}: ${url}`);
-            if (returnError) {
-                return { error: true, code: resp.code, body: resp.body };
-            }
-            throw new ScriptException(`PreserveTube request failed: ${url} (HTTP ${resp.code})`);
-        }
-        if (parseJson) {
-            return JSON.parse(resp.body);
-        }
-        return resp.body;
+        java.lang.Thread.sleep(ms);
     } catch (e) {
-        if (e instanceof ScriptException) throw e;
-        log(`Request error: ${e.message}`);
-        if (returnError) {
-            return { error: true, code: 0, body: e.message };
-        }
-        throw new ScriptException(`PreserveTube request error: ${url} - ${e.message}`);
+        log("Sleep not available, continuing without delay");
     }
+}
+
+// Helper: Make HTTP GET request with retry logic for transient failures
+function makeGetRequest(url, parseJson = true, returnError = false) {
+    const maxRetries = 3;
+    const retryDelay = 1000;
+    const retryStatuses = [408, 429, 500, 502, 503, 504];
+
+    let lastError = null;
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+            const resp = http.GET(url, {});
+            if (!resp.isOk) {
+                log(`Request failed with status ${resp.code}: ${url} (attempt ${attempt}/${maxRetries})`);
+                if (resp.code === 404) {
+                    // Not found is a normal response, not an error
+                    if (returnError) {
+                        return { error: true, code: 404, body: resp.body };
+                    }
+                    return null;
+                }
+                if (attempt < maxRetries && retryStatuses.includes(resp.code)) {
+                    bridge.toast("PreserveTube is having issues, retrying...");
+                    sleep(retryDelay);
+                    continue;
+                }
+                if (returnError) {
+                    bridge.toast("PreserveTube is unavailable right now");
+                    return { error: true, code: resp.code, body: resp.body };
+                }
+                bridge.toast("PreserveTube is unavailable right now");
+                throw new ScriptException(`PreserveTube request failed: ${url} (HTTP ${resp.code})`);
+            }
+            if (attempt > 1) {
+                bridge.toast("PreserveTube recovered");
+            }
+            if (parseJson) {
+                return JSON.parse(resp.body);
+            }
+            return resp.body;
+        } catch (e) {
+            if (e instanceof ScriptException) throw e;
+            lastError = e;
+            log(`Request error (attempt ${attempt}/${maxRetries}): ${e.message}`);
+            if (attempt < maxRetries) {
+                bridge.toast("PreserveTube is having issues, retrying...");
+                sleep(retryDelay);
+            }
+        }
+    }
+
+    bridge.toast("PreserveTube is unavailable right now");
+    if (returnError) {
+        return { error: true, code: 0, body: lastError ? lastError.message : "Unknown error" };
+    }
+    throw new ScriptException(`PreserveTube request failed after ${maxRetries} attempts: ${url} - ${lastError ? lastError.message : "Unknown error"}`);
 }
 
 // Helper: Build YouTube URL from video ID
 function buildYouTubeUrl(videoId) {
     return `https://www.youtube.com/watch?v=${videoId}`;
-}
-
-// Helper: Build PreserveTube save URL for archiving
-function buildSaveUrl(videoId) {
-    const youtubeUrl = buildYouTubeUrl(videoId);
-    return `${PLATFORM_BASE_URL}/save?url=${encodeURIComponent(youtubeUrl)}`;
 }
 
 // Helper: Build YouTube channel URL from channel ID

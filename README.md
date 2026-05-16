@@ -13,12 +13,14 @@ grayjay://plugin/https://raw.githubusercontent.com/b-risk/grayjay-plugin-preserv
 
 ### Features
 - [x] Home feed (latest archived videos)
-- [x] Video playback
+- [x] Video playback from PreserveTube
 - [x] Channel pages with video listings
 - [x] Search
-- [x] YouTube video URL support (redirects to archived version on PreserveTube)
+- [x] YouTube video URL support — always checks PreserveTube first for archived copy; redirects to YouTube plugin if not found
 - [x] YouTube channel separation (can be disabled in settings)
 - [x] Archiving prompt for unarchived YouTube videos (optional, off by default)
+- [x] Retry logic with toast notifications when PreserveTube is unresponsive
+- [x] Graceful fallback to YouTube when PreserveTube is unavailable
 
 ### Contributions
 Contributions are welcome, feel free to submit pull requests if you think you can improve something or fix a bug.
