@@ -1,38 +1,41 @@
-const PLATFORM = "PreserveTube";
-const PLATFORM_BASE_URL = "https://preservetube.com";
+// Platform information
+const platform = {
+    title: 'PreserveTube',
+    url: 'https://preservetube.com'
+}
 
-// URL patterns - PreserveTube
-const REGEX_VIDEO_URL = /https:\/\/preservetube\.com\/watch\?v=([\w\-_]{11})/;
-const REGEX_CHANNEL_URL = /https:\/\/preservetube\.com\/channel\/(@?[\w\-_]+)/;
-const REGEX_CHANNEL_VIDEOS_URL = /https:\/\/preservetube\.com\/channel\/(@?[\w\-_]+)\/videos/;
+// Regex variables
+const regex = {
+    // PreserveTube URLs
+    videoUrl: /https:\/\/preservetube\.com\/watch\?v=([\w\-_]{11})/,
+    channelUrl: /https:\/\/preservetube\.com\/channel\/(@?[\w\-_]+)/,
+    channelVideosUrl: /https:\/\/preservetube\.com\/channel\/(@?[\w\-_]+)\/videos/,
+    // YouTube video URLs (to fetch archived versions)
+    youtubeVideoWatch: /https?:\/\/(?:www\.|music\.|m\.)?youtube\.com\/watch\?(?:.*&)?v=([\w\-_]{11})/,
+    youtubeVideoShare: /https?:\/\/youtu\.be\/([\w\-_]{11})/,
+    youtubeVideoEmbed: /https?:\/\/(?:www\.)?youtube\.com\/embed\/([\w\-_]{11})/,
+    youtubeVideoV: /https?:\/\/(?:www\.)?youtube\.com\/v\/([\w\-_]{11})/,
+    youtubeVideoShorts: /https?:\/\/(?:www\.|m\.)?youtube\.com\/shorts\/([\w\-_]{11})/,
+    // YouTube channel URLs
+    youtubeChannelId: /https?:\/\/(?:www\.|m\.)?youtube\.com\/channel\/(UC[\w\-_]{22})/,
+    youtubeChannelHandle: /https?:\/\/(?:www\.|m\.)?youtube\.com\/@([\w\-_.]+)/,
+    youtubeChannelCustom: /https?:\/\/(?:www\.|m\.)?youtube\.com\/c\/([^\/\?]+)/,
+    youtubeChannelUser: /https?:\/\/(?:www\.|m\.)?youtube\.com\/user\/([^\/\?]+)/
+}
 
-// URL patterns - YouTube Video (to fetch archived versions)
-// Supports: youtube.com/watch?v=, youtu.be/, youtube.com/embed/, youtube.com/v/,
-//           youtube.com/shorts/, music.youtube.com/watch?v=
-const REGEX_YOUTUBE_VIDEO_WATCH = /https?:\/\/(?:www\.|music\.|m\.)?youtube\.com\/watch\?(?:.*&)?v=([\w\-_]{11})/;
-const REGEX_YOUTUBE_VIDEO_SHARE = /https?:\/\/youtu\.be\/([\w\-_]{11})/;
-const REGEX_YOUTUBE_VIDEO_EMBED = /https?:\/\/(?:www\.)?youtube\.com\/embed\/([\w\-_]{11})/;
-const REGEX_YOUTUBE_VIDEO_V = /https?:\/\/(?:www\.)?youtube\.com\/v\/([\w\-_]{11})/;
-const REGEX_YOUTUBE_VIDEO_SHORTS = /https?:\/\/(?:www\.|m\.)?youtube\.com\/shorts\/([\w\-_]{11})/;
-
-// URL patterns - YouTube Channel
-// Supports: youtube.com/channel/UCxxx, youtube.com/@handle, youtube.com/c/name, youtube.com/user/name
-const REGEX_YOUTUBE_CHANNEL_ID = /https?:\/\/(?:www\.|m\.)?youtube\.com\/channel\/(UC[\w\-_]{22})/;
-const REGEX_YOUTUBE_CHANNEL_HANDLE = /https?:\/\/(?:www\.|m\.)?youtube\.com\/@([\w\-_.]+)/;
-const REGEX_YOUTUBE_CHANNEL_CUSTOM = /https?:\/\/(?:www\.|m\.)?youtube\.com\/c\/([^\/\?]+)/;
-const REGEX_YOUTUBE_CHANNEL_USER = /https?:\/\/(?:www\.|m\.)?youtube\.com\/user\/([^\/\?]+)/;
 
 // State
-let config = {};
-let _settings = {};
-let state = {
+var config = {};
+var settings = {};
+var state = {
     channelCache: {}
-};
+}
+
 
 // Source: Enable
-source.enable = function(conf, settings, savedState) {
-    config = conf ?? {};
-    _settings = settings ?? {};
+source.enable = function(conf, _settings, savedState) {
+    config = conf;
+    settings = _settings;
 
     if (savedState) {
         try {
@@ -43,26 +46,25 @@ source.enable = function(conf, settings, savedState) {
     }
 
     log("PreserveTube plugin enabled");
-};
+}
 
 // Source: Disable
 source.disable = function() {
     log("PreserveTube plugin disabled");
-};
+}
 
 // Source: Save State
 source.saveState = function() {
     return JSON.stringify(state);
-};
+}
 
 // Source: Get Home (Latest videos)
 source.getHome = function() {
-    const url = `${PLATFORM_BASE_URL}/latest`;
-    const html = makeGetRequest(url, false);
+    // Get PreserveTube's latest page
+    const html = makeGetRequest(`${platform.url}/latest`, false);
 
-    if (!html) {
+    if (!html)
         throw new ScriptException("Failed to fetch home page from PreserveTube");
-    }
 
     const videoCards = parseVideoCardsFromHtml(html);
     const videos = [];
@@ -81,13 +83,13 @@ source.getHome = function() {
             uploadDate: parseDate(card.publishedDate),
             duration: 0,
             viewCount: -1,
-            url: `${PLATFORM_BASE_URL}/watch?v=${card.id}`,
+            url: `${platform.url}/watch?v=${card.id}`,
             isLive: false
         }));
     }
 
     return new VideoPager(videos, false);
-};
+}
 
 // Source: Search Capabilities
 source.getSearchCapabilities = function() {
@@ -96,21 +98,19 @@ source.getSearchCapabilities = function() {
         sorts: [],
         filters: []
     };
-};
+}
 
 // Source: Search Suggestions
 source.searchSuggestions = function(query) {
     return [];
-};
+}
 
 // Source: Search
 source.search = function(query, type, order, filters) {
-    const url = `${PLATFORM_BASE_URL}/search?search=${encodeURIComponent(query)}`;
-    const html = makeGetRequest(url, false);
+    const html = makeGetRequest(`${platform.url}/search?search=${encodeURIComponent(query)}`, false);
 
-    if (!html) {
-        throw new ScriptException("Failed to search PreserveTube: " + query);
-    }
+    if (!html) 
+        return new VideoPager([], false);
 
     const videoCards = parseVideoCardsFromHtml(html);
     const videos = [];
@@ -129,13 +129,13 @@ source.search = function(query, type, order, filters) {
             uploadDate: parseDate(card.publishedDate),
             duration: 0,
             viewCount: -1,
-            url: `${PLATFORM_BASE_URL}/watch?v=${card.id}`,
+            url: `${platform.url}/watch?v=${card.id}`,
             isLive: false
         }));
     }
 
     return new VideoPager(videos, false);
-};
+}
 
 // Source: Get Search Channel Contents Capabilities
 source.getSearchChannelContentsCapabilities = function() {
@@ -144,21 +144,20 @@ source.getSearchChannelContentsCapabilities = function() {
         sorts: [],
         filters: []
     };
-};
+}
 
 // Source: Search Channel Contents
 source.searchChannelContents = function(url, query, type, order, filters, continuationToken) {
     return source.search(query, type, order, filters);
-};
+}
 
 // Source: Search Channels
 source.searchChannels = function(query, continuationToken) {
-    const url = `${PLATFORM_BASE_URL}/search?search=${encodeURIComponent(query)}`;
-    const html = makeGetRequest(url, false);
+    // Grab video search results, PreserveTube doesn't support channel searches
+    const html = makeGetRequest(`${platform.url}/search?search=${encodeURIComponent(query)}`, false);
 
-    if (!html) {
+    if (!html)
         throw new ScriptException("Failed to search PreserveTube channels: " + query);
-    }
 
     const videoCards = parseVideoCardsFromHtml(html);
     const seenChannels = new Set();
@@ -167,10 +166,14 @@ source.searchChannels = function(query, continuationToken) {
     const queryLower = query.toLowerCase();
 
     for (const card of videoCards) {
-        if (!card.channel || seenChannels.has(card.channel.id)) continue;
+        // Check if channel has already been found
+        if (!card.channel || seenChannels.has(card.channel.id)) 
+            continue;
+
         seenChannels.add(card.channel.id);
 
-        if (!card.channel.name.toLowerCase().includes(queryLower)) continue;
+        if (!card.channel.name.toLowerCase().includes(queryLower)) 
+            continue;
 
         channels.push(new PlatformChannel({
             id: createChannelPlatformID(card.channel.id),
@@ -185,45 +188,35 @@ source.searchChannels = function(query, continuationToken) {
     }
 
     return new ChannelPager(channels, false);
-};
-
-// Helper: Build PreserveTube save URL for archiving
-function buildSaveUrl(videoId) {
-    const youtubeUrl = buildYouTubeUrl(videoId);
-    return `${PLATFORM_BASE_URL}/save?url=${encodeURIComponent(youtubeUrl)}`;
 }
 
 // Source: Is Content Details URL (accepts PreserveTube and YouTube video URLs)
 source.isContentDetailsUrl = function(url) {
-    if (REGEX_VIDEO_URL.test(url)) return true;
-    return !!extractVideoId(url);
-};
+    if (regex.videoUrl.test(url)) { // Test PreserveTube URL
+        return true;
+    } else {
+        const videoId = extractVideoId(url); // Extract ID from YouTube URL if available
+        if (!videoId) {
+            return false;
+        } else if (settings.usePreserveTubeArchiving) { // Claim URL if archiving is enabled to show the captcha
+            return true;
+        } else { // Archiving is disabled, only claim if already archived on PreserveTube
+            const result = makeGetRequest(`${platform.url}/watch?v=${videoId}`, false, true);
+            return result && !result.error;
+        }
+    }
+}
 
 // Source: Get Content Details
 source.getContentDetails = function(url) {
     const videoId = extractVideoId(url);
 
-    if (!videoId) {
+    if (!videoId)
         throw new ScriptException("Invalid video URL: " + url);
-    }
 
     // Fetch the HTML watch page (JSON API is blocked with 403)
-    const watchUrl = `${PLATFORM_BASE_URL}/watch?v=${videoId}`;
+    const watchUrl = `${platform.url}/watch?v=${videoId}`;
     const result = makeGetRequest(watchUrl, false, true);
-
-    // Helper: redirect to YouTube when video isn't available on PreserveTube
-    function redirectToYouTube() {
-        return new PlatformNestedMediaContent({
-            id: createPlatformID(videoId),
-            name: videoId,
-            author: createAuthorLink("youtube", "YouTube", "https://youtube.com", ""),
-            datetime: Math.floor(Date.now() / 1000),
-            url: url,
-            contentUrl: buildYouTubeUrl(videoId),
-            contentName: videoId,
-            contentProvider: "Youtube"
-        });
-    }
 
     // Check for HTTP errors
     if (result && result.error) {
@@ -232,121 +225,52 @@ source.getContentDetails = function(url) {
         log(`Watch page error [${errorCode}]: ${watchUrl} body: ${errorBody}`);
 
         if (errorCode === 404) {
-            if (_settings.usePreserveTubeArchiving === true) {
-                // Video not archived - throw captcha exception to allow archiving
-                const saveUrl = buildSaveUrl(videoId);
-                log(`Video ${videoId} not archived. Redirecting to save page: ${saveUrl}`);
-                throw new CaptchaRequiredException(saveUrl,
-                    `<html><body>
-                    <h1>Video Not Archived</h1>
-                    <p>This video is not yet archived on PreserveTube.</p>
-                    <p>Solve the captcha to request archiving. After completion, try playing the video again.</p>
-                    <script>window.location.href = "${saveUrl}";</script>
-                    </body></html>`
-                );
-            }
-            log(`Video ${videoId} not archived, redirecting to YouTube`);
-            return redirectToYouTube();
+            const saveUrl = buildSaveUrl(videoId);
+            log(`Video ${videoId} not archived. Redirecting to save page: ${saveUrl}`);
+            throw new CaptchaRequiredException(saveUrl,
+                `<html><body>
+                <h1>Video Not Archived</h1>
+                <p>This video is not yet archived on PreserveTube.</p>
+                <p>Solve the captcha to request archiving. After completion, try playing the video again.</p>
+                <script>window.location.href = "${saveUrl}";</script>
+                </body></html>`
+            );
         }
-
-        bridge.toast("PreserveTube error, falling back to YouTube");
-        log(`Falling back to YouTube for ${videoId} (HTTP ${errorCode})`);
-        return redirectToYouTube();
+        throw new ScriptException(`Failed to fetch video details for: ${videoId} (HTTP ${errorCode}: ${errorBody.substring(0, 100)})`);
     }
 
-    if (!result) {
-        log(`Null response for ${videoId}, falling back to YouTube`);
-        return redirectToYouTube();
-    }
+    if (!result)
+        throw new ScriptException("Failed to fetch video details for (null response): " + videoId);
 
     const body = result;
 
-    // Parse title from h1
-    const titleMatch = body.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i);
-    const title = titleMatch ? titleMatch[1].trim() : `Video ${videoId}`;
-
-    // Parse channel info from channel-profile section
-    let channelId = null;
-    let channelName = "Unknown";
-    let channelAvatar = "";
-
-    const channelMatch = body.match(/<div class="channel-profile">\s*<img src="([^"]*)"[^>]*>\s*<span class="channel-name"><a href="\/channel\/(@?[\w\-_]+)">([^<]+)<\/a><\/span>\s*<\/div>/i);
-    if (channelMatch) {
-        channelAvatar = channelMatch[1];
-        channelId = channelMatch[2];
-        channelName = channelMatch[3].trim();
-    }
-
-    // Parse video source from <video> tag
-    const videoSrcMatch = body.match(/<video[^>]*src="([^"]*)"/i);
-    const sourceUrl = videoSrcMatch ? videoSrcMatch[1] : `https://s0.archive.party/preservetube/${videoId}.webm`;
-
-    // Parse thumbnail from poster attribute
-    const posterMatch = body.match(/<video[^>]*poster="([^"]*)"/i);
-    const thumbnail = posterMatch ? posterMatch[1] : "";
-
-    // Parse published date
-    const dateMatch = body.match(/Published on (\d{4}-\d{2}-\d{2})/i);
-    const publishedDate = dateMatch ? dateMatch[1] : null;
-
-    // Parse description
-    const descMatch = body.match(/<p class="description">([\s\S]*?)<\/p>/i);
-    const description = descMatch ? descMatch[1].trim() : "";
-
-    const author = createAuthorLink(
-        channelId || "unknown",
-        channelName,
-        channelId ? `${PLATFORM_BASE_URL}/channel/${channelId}` : null,
-        channelAvatar
-    );
-
-    return new PlatformVideoDetails({
-        id: createPlatformID(videoId),
-        name: title,
-        thumbnails: new Thumbnails([new Thumbnail(thumbnail || "", 0)]),
-        author: author,
-        uploadDate: parseDate(publishedDate),
-                duration: 0,
-        viewCount: -1,
-        url: watchUrl,
-        isLive: false,
-        description: description,
-        video: new VideoSourceDescriptor([
-            new VideoUrlSource({
-                name: "MP4",
-                container: "video/mp4",
-                url: sourceUrl,
-                width: 0,
-                height: 0,
-        duration: 0,
-                codec: "h264"
-            })
-        ])
-    });
-};
+    return parseVideoFromWatchPage(body, videoId, watchUrl);
+}
 
 // Source: Is Channel URL (accepts PreserveTube and YouTube channel URLs)
 source.isChannelUrl = function(url) {
-    if (REGEX_CHANNEL_URL.test(url)) return true;
-    if (_settings.youtubeChannelSeparation === false) return isYouTubeChannelUrl(url);
-    return false;
-};
+    if (regex.channelUrl.test(url)) { // Test PreserveTube URL
+        return true;
+    } else if (settings.youtubeChannelSeparation === false) { // Test YouTube URL scheme if separation is disabled
+        return isYouTubeChannelUrl(url); 
+    } else {
+        return false;
+    }
+}
 
 // Source: Get Channel
 source.getChannel = function(url) {
     const channelId = extractChannelId(url);
 
-    if (!channelId) {
+    if (!channelId) 
         throw new ScriptException("Invalid channel URL: " + url);
-    }
 
     // Check cache
-    if (state.channelCache[channelId]) {
+    if (state.channelCache[channelId]) 
         return state.channelCache[channelId];
-    }
 
     // Fetch channel page to get metadata
-    const channelUrl = `${PLATFORM_BASE_URL}/channel/${channelId}`;
+    const channelUrl = `${platform.url}/channel/${channelId}`;
     const htmlResult = makeGetRequest(channelUrl, false, true);
 
     let channelName = channelId;
@@ -355,87 +279,15 @@ source.getChannel = function(url) {
     if (htmlResult && htmlResult.error) {
         log(`PreserveTube channel page error for ${channelId}: HTTP ${htmlResult.code} — using fallback info`);
     } else if (htmlResult) {
-        // Parse channel info from HTML
-        // Try each name pattern until one matches
-        // Pattern 1: h1 tag
-        let nameFound = false;
-        const h1Match = htmlResult.match(/<h1[^>]*>([^<]+)<\/h1>/i);
-        if (h1Match) {
-            channelName = h1Match[1].trim();
-            nameFound = true;
-        }
-
-        // Pattern 2: title tag (strip " | PreserveTube" suffix)
-        if (!nameFound) {
-            const titleMatch = htmlResult.match(/<title>([^|]+)\s*\|/i);
-            if (titleMatch) {
-                channelName = titleMatch[1].trim();
-                nameFound = true;
-            }
-        }
-
-        // Pattern 3: og:title meta tag
-        if (!nameFound) {
-            const ogMatch = htmlResult.match(/<meta[^>]*property="og:title"[^>]*content="([^"]*)"[^>]*>/i);
-            if (ogMatch) {
-                channelName = ogMatch[1].replace(/\s*\|\s*PreserveTube\s*$/i, '').trim();
-                nameFound = true;
-            }
-        }
-
-        // Pattern 4: channel-name link on the page
-        if (!nameFound) {
-            const channelLinkMatch = htmlResult.match(/<a[^>]*href="\/channel\/(@?[\w\-_]+)"[^>]*>\s*([^<]+?)\s*<\/a>/i);
-            if (channelLinkMatch) {
-                channelName = channelLinkMatch[2].trim();
-            }
-        }
-
-        // Look for channel avatar - try multiple patterns
-        // Pattern 1: class="...avatar..."
-        const avatarMatch = htmlResult.match(/<img[^>]*class="[^"]*avatar[^"]*"[^>]*src="([^"]*)"[^>]*>/i);
-        if (avatarMatch) {
-            avatar = avatarMatch[1];
-        }
-
-        // Pattern 2: style with border-radius
-        if (!avatar) {
-            const altAvatarMatch = htmlResult.match(/<img[^>]*style="[^"]*border-radius[^"]*"[^>]*src="([^"]*)"[^>]*>/i);
-            if (altAvatarMatch) {
-                avatar = altAvatarMatch[1];
-            }
-        }
-
-        // Pattern 3: inside channel-profile div (actual PreserveTube pattern)
-        if (!avatar) {
-            const profileMatch = htmlResult.match(/<div class="channel-profile">\s*<img src="([^"]*)"/i);
-            if (profileMatch) {
-                avatar = profileMatch[1];
-            }
-        }
-
-        // Pattern 4: yt3.googleusercontent.com image (channel avatar on channel page)
-        if (!avatar) {
-            const ytImgMatch = htmlResult.match(/<img[^>]+src="(https:\/\/yt3\.googleusercontent\.com[^"]*)"/i);
-            if (ytImgMatch) {
-                avatar = ytImgMatch[1];
-            }
-        }
-
-        // Pattern 5: first img that isn't a thumbnail
-        if (!avatar) {
-            const firstImgMatch = htmlResult.match(/<img[^>]+src="([^"]+)"[^>]*>/i);
-            // Only use it if it's not a thumbnail
-            if (firstImgMatch && firstImgMatch[1] && !firstImgMatch[0].includes('class="thumbnail"')) {
-                avatar = firstImgMatch[1];
-            }
-        }
+        const parsed = parseChannelInfoFromHtml(htmlResult, channelId);
+        channelName = parsed.name;
+        avatar = parsed.avatar;
     }
 
     // Build channel URLs: use PreserveTube as main when separation is enabled
     const youtubeChannelUrl = buildYouTubeChannelUrl(channelId);
-    const mainUrl = _settings.youtubeChannelSeparation !== false ? channelUrl : (youtubeChannelUrl || channelUrl);
-    const urlAlternatives = _settings.youtubeChannelSeparation !== false ? [] : (youtubeChannelUrl ? [channelUrl] : []);
+    const mainUrl = settings.youtubeChannelSeparation !== false ? channelUrl : (youtubeChannelUrl || channelUrl);
+    const urlAlternatives = settings.youtubeChannelSeparation !== false ? [] : (youtubeChannelUrl ? [channelUrl] : []);
 
     const channel = new PlatformChannel({
         id: createChannelPlatformID(channelId),
@@ -453,7 +305,7 @@ source.getChannel = function(url) {
     state.channelCache[channelId] = channel;
 
     return channel;
-};
+}
 
 // Source: Get Channel Capabilities
 source.getChannelCapabilities = function() {
@@ -462,18 +314,17 @@ source.getChannelCapabilities = function() {
         sorts: [],
         filters: []
     };
-};
+}
 
 // Source: Get Channel Contents
 source.getChannelContents = function(url, type, order, filters) {
     const channelId = extractChannelId(url);
 
-    if (!channelId) {
+    if (!channelId)
         throw new ScriptException("Invalid channel URL for contents: " + url);
-    }
 
     // Try the /videos endpoint first for archived-only videos
-    let channelUrl = `${PLATFORM_BASE_URL}/channel/${channelId}/videos`;
+    let channelUrl = `${platform.url}/channel/${channelId}/videos`;
     let html = null;
     try {
         html = makeGetRequest(channelUrl, false);
@@ -483,13 +334,12 @@ source.getChannelContents = function(url, type, order, filters) {
 
     // If that fails, try the main channel page
     if (!html) {
-        channelUrl = `${PLATFORM_BASE_URL}/channel/${channelId}`;
+        channelUrl = `${platform.url}/channel/${channelId}`;
         html = makeGetRequest(channelUrl, false);
     }
 
-    if (!html) {
+    if (!html)
         throw new ScriptException("Failed to fetch channel contents from PreserveTube: " + channelId);
-    }
 
     const videoCards = parseVideoCardsFromHtml(html);
     const videos = [];
@@ -504,7 +354,7 @@ source.getChannelContents = function(url, type, order, filters) {
 
     const author = channel
         ? createAuthorLink(channelId, channel.name, channel.url, channel.thumbnail)
-        : createAuthorLink(channelId, channelId, `${PLATFORM_BASE_URL}/channel/${channelId}`, "");
+        : createAuthorLink(channelId, channelId, `${platform.url}/channel/${channelId}`, "");
 
     for (const card of videoCards) {
         videos.push(new PlatformVideo({
@@ -515,37 +365,56 @@ source.getChannelContents = function(url, type, order, filters) {
             uploadDate: parseDate(card.publishedDate),
             duration: 0,
             viewCount: -1,
-            url: `${PLATFORM_BASE_URL}/watch?v=${card.id}`,
+            url: `${platform.url}/watch?v=${card.id}`,
             isLive: false
         }));
     }
 
     return new VideoPager(videos, false);
-};
-
-
-// Helper: Create PlatformID
-function createPlatformID(id) {
-    return new PlatformID(PLATFORM, id, config?.id);
 }
 
-// Helper: Create PlatformID for a channel (with prefix when separation is enabled)
+
+/**
+ * Create PlatformID for a video or channel
+ * @param {string} id
+ * @returns {PlatformID}
+ */
+function createPlatformID(id) {
+    return new PlatformID(platform.title, id, config?.id);
+}
+
+/**
+ * Create PlatformID for a channel (with prefix when separation is enabled)
+ * @param {string} channelId
+ * @returns {PlatformID}
+ */
 function createChannelPlatformID(channelId) {
-    const prefixed = _settings.youtubeChannelSeparation !== false ? "preservetube://" + channelId : channelId;
+    const prefixed = settings.youtubeChannelSeparation !== false ? "preservetube://" + channelId : channelId;
     return createPlatformID(prefixed);
 }
 
-// Helper: Create PlatformAuthorLink
+/**
+ * Create PlatformAuthorLink
+ * @param {string} channelId
+ * @param {string} channelName
+ * @param {string|null} channelUrl
+ * @param {string} thumbnail
+ * @returns {PlatformAuthorLink}
+ */
 function createAuthorLink(channelId, channelName, channelUrl, thumbnail) {
     return new PlatformAuthorLink(
         createChannelPlatformID(channelId),
         channelName || "Unknown",
-        channelUrl || `${PLATFORM_BASE_URL}/channel/${channelId}`,
+        channelUrl || `${platform.url}/channel/${channelId}`,
         thumbnail || ""
     );
 }
 
-// Helper: Parse date string to Unix timestamp
+/**
+ * Parse date string to Unix timestamp
+ * @param {string|null} dateStr
+ * @returns {number}
+ */
 function parseDate(dateStr) {
     if (!dateStr) return Math.floor(Date.now() / 1000);
     try {
@@ -560,86 +429,98 @@ function parseDate(dateStr) {
     }
 }
 
-// Helper: Extract video ID from URL (supports PreserveTube and YouTube URLs)
+/**
+ * Extract video ID from URL (supports PreserveTube and YouTube URLs)
+ * @param {string} url
+ * @returns {string|null}
+ */
 function extractVideoId(url) {
     // Try PreserveTube URL first
-    let match = url.match(REGEX_VIDEO_URL);
+    let match = url.match(regex.videoUrl);
     if (match) return match[1];
 
     // Try all YouTube URL patterns
-    match = url.match(REGEX_YOUTUBE_VIDEO_WATCH);
+    match = url.match(regex.youtubeVideoWatch);
     if (match) return match[1];
 
-    match = url.match(REGEX_YOUTUBE_VIDEO_SHARE);
+    match = url.match(regex.youtubeVideoShare);
     if (match) return match[1];
 
-    match = url.match(REGEX_YOUTUBE_VIDEO_EMBED);
+    match = url.match(regex.youtubeVideoEmbed);
     if (match) return match[1];
 
-    match = url.match(REGEX_YOUTUBE_VIDEO_V);
+    match = url.match(regex.youtubeVideoV);
     if (match) return match[1];
 
-    match = url.match(REGEX_YOUTUBE_VIDEO_SHORTS);
+    match = url.match(regex.youtubeVideoShorts);
     if (match) return match[1];
 
     return null;
 }
 
-// Helper: Check if URL is a YouTube video URL
+/**
+ * Check if URL is a YouTube video URL
+ * @param {string} url
+ * @returns {boolean}
+ */
 function isYouTubeVideoUrl(url) {
-    return REGEX_YOUTUBE_VIDEO_WATCH.test(url) ||
-           REGEX_YOUTUBE_VIDEO_SHARE.test(url) ||
-           REGEX_YOUTUBE_VIDEO_EMBED.test(url) ||
-           REGEX_YOUTUBE_VIDEO_V.test(url) ||
-           REGEX_YOUTUBE_VIDEO_SHORTS.test(url);
+    return regex.youtubeVideoWatch.test(url) ||
+           regex.youtubeVideoShare.test(url) ||
+           regex.youtubeVideoEmbed.test(url) ||
+           regex.youtubeVideoV.test(url) ||
+           regex.youtubeVideoShorts.test(url);
 }
 
-// Helper: Extract channel ID from URL (supports PreserveTube and YouTube URLs)
+/**
+ * Extract channel ID from URL (supports PreserveTube and YouTube URLs)
+ * @param {string} url
+ * @returns {string|null}
+ */
 function extractChannelId(url) {
     // Try PreserveTube URL first
-    let match = url.match(REGEX_CHANNEL_URL);
+    let match = url.match(regex.channelUrl);
     if (match) return match[1];
 
     // Try YouTube channel ID (UCxxx)
-    match = url.match(REGEX_YOUTUBE_CHANNEL_ID);
+    match = url.match(regex.youtubeChannelId);
     if (match) return match[1];
 
     // Try YouTube handle (@name)
-    match = url.match(REGEX_YOUTUBE_CHANNEL_HANDLE);
+    match = url.match(regex.youtubeChannelHandle);
     if (match) return "@" + match[1];
 
     // Try YouTube custom URL (/c/name)
-    match = url.match(REGEX_YOUTUBE_CHANNEL_CUSTOM);
+    match = url.match(regex.youtubeChannelCustom);
     if (match) return match[1];
 
     // Try YouTube user URL (/user/name)
-    match = url.match(REGEX_YOUTUBE_CHANNEL_USER);
+    match = url.match(regex.youtubeChannelUser);
     if (match) return match[1];
 
     return null;
 }
 
-// Helper: Check if URL is a YouTube channel URL
+/**
+ * Check if URL is a YouTube channel URL
+ * @param {string} url
+ * @returns {boolean}
+ */
 function isYouTubeChannelUrl(url) {
-    return REGEX_YOUTUBE_CHANNEL_ID.test(url) ||
-           REGEX_YOUTUBE_CHANNEL_HANDLE.test(url) ||
-           REGEX_YOUTUBE_CHANNEL_CUSTOM.test(url) ||
-           REGEX_YOUTUBE_CHANNEL_USER.test(url);
+    return regex.youtubeChannelId.test(url) ||
+           regex.youtubeChannelHandle.test(url) ||
+           regex.youtubeChannelCustom.test(url) ||
+           regex.youtubeChannelUser.test(url);
 }
 
-// Helper: Sleep for a given duration (catches error if Thread is not available)
-function sleep(ms) {
-    try {
-        java.lang.Thread.sleep(ms);
-    } catch (e) {
-        log("Sleep not available, continuing without delay");
-    }
-}
-
-// Helper: Make HTTP GET request with retry logic for transient failures
+/**
+ * Make HTTP GET request with retry logic for transient failures
+ * @param {string} url
+ * @param {boolean} [parseJson=true]
+ * @param {boolean} [returnError=false]
+ * @returns {object|string|null}
+ */
 function makeGetRequest(url, parseJson = true, returnError = false) {
     const maxRetries = 3;
-    const retryDelay = 1000;
     const retryStatuses = [408, 429, 500, 502, 503, 504];
 
     let lastError = null;
@@ -650,7 +531,6 @@ function makeGetRequest(url, parseJson = true, returnError = false) {
             if (!resp.isOk) {
                 log(`Request failed with status ${resp.code}: ${url} (attempt ${attempt}/${maxRetries})`);
                 if (resp.code === 404) {
-                    // Not found is a normal response, not an error
                     if (returnError) {
                         return { error: true, code: 404, body: resp.body };
                     }
@@ -658,7 +538,6 @@ function makeGetRequest(url, parseJson = true, returnError = false) {
                 }
                 if (attempt < maxRetries && retryStatuses.includes(resp.code)) {
                     bridge.toast("PreserveTube is having issues, retrying...");
-                    sleep(retryDelay);
                     continue;
                 }
                 if (returnError) {
@@ -681,7 +560,6 @@ function makeGetRequest(url, parseJson = true, returnError = false) {
             log(`Request error (attempt ${attempt}/${maxRetries}): ${e.message}`);
             if (attempt < maxRetries) {
                 bridge.toast("PreserveTube is having issues, retrying...");
-                sleep(retryDelay);
             }
         }
     }
@@ -693,12 +571,20 @@ function makeGetRequest(url, parseJson = true, returnError = false) {
     throw new ScriptException(`PreserveTube request failed after ${maxRetries} attempts: ${url} - ${lastError ? lastError.message : "Unknown error"}`);
 }
 
-// Helper: Build YouTube URL from video ID
+/**
+ * Build YouTube URL from video ID
+ * @param {string} videoId
+ * @returns {string}
+ */
 function buildYouTubeUrl(videoId) {
     return `https://www.youtube.com/watch?v=${videoId}`;
 }
 
-// Helper: Build YouTube channel URL from channel ID
+/**
+ * Build YouTube channel URL from channel ID
+ * @param {string} channelId
+ * @returns {string|null}
+ */
 function buildYouTubeChannelUrl(channelId) {
     if (!channelId) return null;
 
@@ -716,73 +602,62 @@ function buildYouTubeChannelUrl(channelId) {
     return `https://www.youtube.com/@${channelId}`;
 }
 
-// Helper: Parse video cards from HTML
-// Returns array of objects with video info AND associated channel info
+/**
+ * Parse video cards from HTML
+ * @param {string} html
+ * @returns {Array<{id: string, title: string, thumbnail: string, publishedDate: string|null, archivedDate: string|null, channel: {id: string, name: string, avatar: string, url: string}|null}>}
+ */
 function parseVideoCardsFromHtml(html) {
     const videos = [];
     const seenIds = new Set();
+    const doc = domParser.parseFromString(html, "text/html");
+    const cards = doc.querySelectorAll('.video');
 
-    // Match each .video block using depth counting for nested divs
-    const videoStart = '<div class="video">';
-    let pos = 0;
-    while ((pos = html.indexOf(videoStart, pos)) !== -1) {
-        let depth = 1;
-        let i = pos + videoStart.length;
-        while (i < html.length && depth > 0) {
-            const openTag = html.indexOf('<div', i);
-            const closeTag = html.indexOf('</div>', i);
-            if (closeTag === -1) break;
-            if (openTag !== -1 && openTag < closeTag) {
-                depth++;
-                i = openTag + 4;
-            } else {
-                depth--;
-                i = closeTag + 6;
-            }
-        }
-        if (depth !== 0) break;
-        const blockEnd = i;
-        const cardContent = html.substring(pos + videoStart.length, blockEnd - 6);
-
-        const videoLinkMatch = cardContent.match(/<a[^>]*href="\/watch\?v=([\w\-_]{11})"[^>]*>/i);
-        if (!videoLinkMatch) { pos = blockEnd; continue; }
-        const videoId = videoLinkMatch[1];
-        if (seenIds.has(videoId)) { pos = blockEnd; continue; }
+    for (let i = 0; i < cards.length; i++) {
+        const card = cards[i];
+        const link = card.querySelector('a[href*="/watch?v="]');
+        if (!link) continue;
+        const href = link.getAttribute('href');
+        const videoIdMatch = href.match(/\/watch\?v=([\w\-_]{11})/);
+        if (!videoIdMatch) continue;
+        const videoId = videoIdMatch[1];
+        if (seenIds.has(videoId)) continue;
         seenIds.add(videoId);
 
-        // Extract thumbnail
-        const thumbMatch = cardContent.match(/<img[^>]*src="([^"]*)"[^>]*>/i);
-        const thumbnail = thumbMatch ? thumbMatch[1] : "";
+        const img = card.querySelector('img');
+        const thumbnail = img ? img.getAttribute('src') || "" : "";
 
-        // Extract title
-        const titleMatch = cardContent.match(/<div class="title">([\s\S]*?)<\/div>/i);
-        let title = titleMatch ? titleMatch[1].trim() : `Video ${videoId}`;
+        const titleEl = card.querySelector('.title');
+        let title = titleEl ? titleEl.textContent.trim() : `Video ${videoId}`;
         title = title.replace(/\s+/g, ' ').trim();
 
-        // Extract dates
-        const dateMatch = cardContent.match(/<div class="date">([\s\S]*?)<\/div>/i);
-        const dateText = dateMatch ? dateMatch[1] : "";
         let publishedDate = null;
         let archivedDate = null;
-        const pubMatch = dateText.match(/Published on\s+([^|]+)/i);
-        if (pubMatch) publishedDate = pubMatch[1].trim();
-        const archMatch = dateText.match(/Archived on\s+(.+)/i);
-        if (archMatch) archivedDate = archMatch[1].trim();
+        const dateEl = card.querySelector('.date');
+        if (dateEl) {
+            const dateText = dateEl.textContent;
+            const pubMatch = dateText.match(/Published on\s+([^|]+)/i);
+            if (pubMatch) publishedDate = pubMatch[1].trim();
+            const archMatch = dateText.match(/Archived on\s+(.+)/i);
+            if (archMatch) archivedDate = archMatch[1].trim();
+        }
 
-        // Extract channel info from channel-profile
         let channelInfo = null;
-        const profileMatch = cardContent.match(/<div class="channel-profile">([\s\S]*?)<\/div>/i);
-        if (profileMatch) {
-            const channelContent = profileMatch[1];
-            const channelLinkMatch = channelContent.match(/<a[^>]*href="\/channel\/(@?[\w\-_]+)"[^>]*>([\s\S]*?)<\/a>/i);
-            if (channelLinkMatch) {
-                const channelImgMatch = channelContent.match(/<img[^>]*src="([^"]*)"[^>]*>/i);
-                channelInfo = {
-                    id: channelLinkMatch[1],
-                    name: channelLinkMatch[2].trim(),
-                    avatar: channelImgMatch ? channelImgMatch[1] : "",
-                    url: `${PLATFORM_BASE_URL}/channel/${channelLinkMatch[1]}`
-                };
+        const profileEl = card.querySelector('.channel-profile');
+        if (profileEl) {
+            const channelLink = profileEl.querySelector('a[href*="/channel/"]');
+            const channelImg = profileEl.querySelector('img');
+            if (channelLink) {
+                const chHref = channelLink.getAttribute('href');
+                const chIdMatch = chHref.match(/\/channel\/(@?[\w\-_]+)/);
+                if (chIdMatch) {
+                    channelInfo = {
+                        id: chIdMatch[1],
+                        name: channelLink.textContent.trim(),
+                        avatar: channelImg ? channelImg.getAttribute('src') || "" : "",
+                        url: `${platform.url}/channel/${chIdMatch[1]}`
+                    };
+                }
             }
         }
 
@@ -794,28 +669,181 @@ function parseVideoCardsFromHtml(html) {
             archivedDate: archivedDate,
             channel: channelInfo
         });
-
-        pos = blockEnd;
     }
 
     return videos;
 }
 
-// Helper: Get video source descriptor
-function getVideoSource(videoData) {
-    const sourceUrl = videoData.source || `https://s0.archive.party/preservetube/${videoData.id}.webm`;
+/**
+ * Parse video details from PreserveTube watch page HTML
+ * @param {string} body
+ * @param {string} videoId
+ * @param {string} watchUrl
+ * @returns {PlatformVideoDetails}
+ */
+function parseVideoFromWatchPage(body, videoId, watchUrl) {
+    const doc = domParser.parseFromString(body, "text/html");
 
-    return new VideoSourceDescriptor([
-        new VideoUrlSource({
-            name: "WebM",
-            container: "video/webm",
-            url: sourceUrl,
-            width: 0,
-            height: 0,
-            duration: 0,
-            codec: "vp9"
-        })
-    ]);
+    const titleEl = doc.querySelector('h1');
+    const title = titleEl ? titleEl.textContent.trim() : `Video ${videoId}`;
+
+    let channelId = null;
+    let channelName = "Unknown";
+    let channelAvatar = "";
+
+    const profileEl = doc.querySelector('.channel-profile');
+    if (profileEl) {
+        const channelImg = profileEl.querySelector('img');
+        const channelLink = profileEl.querySelector('a[href*="/channel/"]');
+        if (channelImg) channelAvatar = channelImg.getAttribute('src') || "";
+        if (channelLink) {
+            const chHref = channelLink.getAttribute('href');
+            const chIdMatch = chHref.match(/\/channel\/(@?[\w\-_]+)/);
+            if (chIdMatch) {
+                channelId = chIdMatch[1];
+                channelName = channelLink.textContent.trim();
+            }
+        }
+    }
+
+    const videoEl = doc.querySelector('video');
+    const sourceUrl = videoEl
+        ? videoEl.getAttribute('src') || `https://s0.archive.party/preservetube/${videoId}.webm`
+        : `https://s0.archive.party/preservetube/${videoId}.webm`;
+    const thumbnail = videoEl ? videoEl.getAttribute('poster') || "" : "";
+
+    let publishedDate = null;
+    const dateEl = doc.querySelector('.date');
+    if (dateEl) {
+        const dateText = dateEl.textContent;
+        const dateMatch = dateText.match(/Published on\s+(\d{4}-\d{2}-\d{2})/i);
+        if (dateMatch) publishedDate = dateMatch[1];
+    }
+
+    const descEl = doc.querySelector('.description');
+    const description = descEl ? descEl.textContent.trim() : "";
+
+    const author = createAuthorLink(
+        channelId || "unknown",
+        channelName,
+        channelId ? `${platform.url}/channel/${channelId}` : null,
+        channelAvatar
+    );
+
+    return new PlatformVideoDetails({
+        id: createPlatformID(videoId),
+        name: title,
+        thumbnails: new Thumbnails([new Thumbnail(thumbnail || "", 0)]),
+        author: author,
+        uploadDate: parseDate(publishedDate),
+        duration: 0,
+        viewCount: -1,
+        url: watchUrl,
+        isLive: false,
+        description: description,
+        video: new VideoSourceDescriptor([
+            new VideoUrlSource({
+                name: "MP4",
+                container: "video/mp4",
+                url: sourceUrl,
+                width: 0,
+                height: 0,
+                duration: 0,
+                codec: "h264"
+            })
+        ])
+    });
+}
+
+/**
+ * Parse channel info from PreserveTube channel page HTML
+ * @param {string} html
+ * @param {string} channelId
+ * @returns {{name: string, avatar: string}}
+ */
+function parseChannelInfoFromHtml(html, channelId) {
+    const doc = domParser.parseFromString(html, "text/html");
+    let channelName = channelId;
+    let avatar = "";
+
+    let nameFound = false;
+    const h1El = doc.querySelector('h1');
+    if (h1El) {
+        channelName = h1El.textContent.trim();
+        nameFound = true;
+    }
+
+    if (!nameFound) {
+        const titleEl = doc.querySelector('title');
+        if (titleEl) {
+            const titleText = titleEl.textContent;
+            const titleParts = titleText.split('|');
+            if (titleParts.length > 0) {
+                channelName = titleParts[0].trim();
+                nameFound = true;
+            }
+        }
+    }
+
+    if (!nameFound) {
+        const ogEl = doc.querySelector('meta[property="og:title"]');
+        if (ogEl) {
+            const content = ogEl.getAttribute('content');
+            if (content) {
+                channelName = content.replace(/\s*\|\s*PreserveTube\s*$/i, '').trim();
+                nameFound = true;
+            }
+        }
+    }
+
+    if (!nameFound) {
+        const channelLink = doc.querySelector('a[href*="/channel/"]');
+        if (channelLink) {
+            channelName = channelLink.textContent.trim();
+        }
+    }
+
+    let avatarEl = doc.querySelector('img[class*="avatar"]');
+    if (avatarEl) avatar = avatarEl.getAttribute('src') || "";
+
+    if (!avatar) {
+        avatarEl = doc.querySelector('img[style*="border-radius"]');
+        if (avatarEl) avatar = avatarEl.getAttribute('src') || "";
+    }
+
+    if (!avatar) {
+        avatarEl = doc.querySelector('.channel-profile img');
+        if (avatarEl) avatar = avatarEl.getAttribute('src') || "";
+    }
+
+    if (!avatar) {
+        avatarEl = doc.querySelector('img[src*="yt3.googleusercontent.com"]');
+        if (avatarEl) avatar = avatarEl.getAttribute('src') || "";
+    }
+
+    if (!avatar) {
+        const allImgs = doc.querySelectorAll('img');
+        for (let i = 0; i < allImgs.length; i++) {
+            const img = allImgs[i];
+            const cls = img.getAttribute('class') || "";
+            if (cls.indexOf('thumbnail') === -1) {
+                avatar = img.getAttribute('src') || "";
+                break;
+            }
+        }
+    }
+
+    return { name: channelName, avatar: avatar };
+}
+
+/**
+ * Build PreserveTube save URL for archiving
+ * @param {string} videoId
+ * @returns {string}
+ */
+function buildSaveUrl(videoId) {
+    const youtubeUrl = buildYouTubeUrl(videoId);
+    return `${platform.url}/save?url=${encodeURIComponent(youtubeUrl)}`;
 }
 
 log("PreserveTube plugin loaded");

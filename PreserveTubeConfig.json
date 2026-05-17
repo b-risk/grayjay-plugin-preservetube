@@ -27,16 +27,6 @@
     "captchaUrl": null,
     "completionUrl": "https://preservetube.com/watch?*"
   },
-  "changelog": {
-    "5": [
-      "Rewrote getContentDetails to scrape HTML instead of blocked JSON API",
-      "Added YouTube channel separation setting with ID prefixing",
-      "Added archiving toggle (off by default) with warning dialog",
-      "Fixed channel avatar parsing from yt3.googleusercontent.com",
-      "Rewrote parseVideoCardsFromHtml with proper depth counting",
-      "Added searchChannels support"
-    ]
-  },
   "settings": [
     {
       "variable": "youtubeChannelSeparation",
@@ -53,5 +43,15 @@
       "default": "false",
       "warningDialog": "By enabling this, you agree to only use this feature for videos that you genuinely believe should be preserved long term."
     }
-  ]
+  ],
+  "changelog": {
+    "5": [
+      "Rewrote getContentDetails to scrape HTML instead of blocked JSON API",
+      "Added YouTube channel separation setting with ID prefixing",
+      "Added archiving toggle (off by default) with warning dialog",
+      "Fixed channel avatar parsing from yt3.googleusercontent.com",
+      "Rewrote parseVideoCardsFromHtml with proper depth counting",
+      "Added searchChannels support"
+    ]
+  }
 }
