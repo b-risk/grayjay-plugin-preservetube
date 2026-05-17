@@ -1,7 +1,8 @@
 // Platform information
 const platform = {
     title: 'PreserveTube',
-    url: 'https://preservetube.com'
+    url: 'https://preservetube.com',
+    icon: 'https://raw.githubusercontent.com/b-risk/grayjay-plugin-preservetube/refs/heads/master/Imgs/PreserveTubeIcon.png'
 }
 
 // Regex variables
@@ -269,7 +270,7 @@ source.getChannel = function(url) {
     if (state.channelCache[channelId]) 
         return state.channelCache[channelId];
 
-    // Fetch channel page to get metadata
+    // Fetch channel videos page to extract channel info from video cards
     const channelUrl = `${platform.url}/channel/${channelId}`;
     const htmlResult = makeGetRequest(channelUrl, false, true);
 
@@ -279,9 +280,15 @@ source.getChannel = function(url) {
     if (htmlResult && htmlResult.error) {
         log(`PreserveTube channel page error for ${channelId}: HTTP ${htmlResult.code} — using fallback info`);
     } else if (htmlResult) {
-        const parsed = parseChannelInfoFromHtml(htmlResult, channelId);
-        channelName = parsed.name;
-        avatar = parsed.avatar;
+        const cards = parseVideoCardsFromHtml(htmlResult);
+        if (cards.length > 0 && cards[0].channel) {
+            channelName = cards[0].channel.name;
+            avatar = cards[0].channel.avatar;
+        } else {
+            const parsed = parseChannelInfoFromHtml(htmlResult, channelId);
+            channelName = parsed.name;
+            avatar = parsed.avatar;
+        }
     }
 
     // Build channel URLs: use PreserveTube as main when separation is enabled
@@ -301,8 +308,9 @@ source.getChannel = function(url) {
         links: {}
     });
 
-    // Cache the channel
-    state.channelCache[channelId] = channel;
+    // Cache channel if succeeded
+    if (!(htmlResult && htmlResult.error))
+        state.channelCache[channelId] = channel;
 
     return channel;
 }
