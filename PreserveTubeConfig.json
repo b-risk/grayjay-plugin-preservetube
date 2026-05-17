@@ -3,14 +3,14 @@
   "name": "PreserveTube",
   "platformUrl": "https://preservetube.com/",
   "description": "PreserveTube is a time capsule for YouTube videos! It allows you to preserve any YouTube video, creating a snapshot that will always be available even if the original video disappears or is taken down.",
-  "author": "Freeb, Stefan Cruz",
+  "author": "Freeb",
   "authorUrl": "https://github.com/b-risk",
   "repositoryUrl": "https://github.com/b-risk/grayjay-plugin-preservetube",
   "sourceUrl": "https://raw.githubusercontent.com/b-risk/grayjay-plugin-preservetube/refs/heads/master/PreserveTubeConfig.json",
   "scriptUrl": "./PreserveTubeScript.js",
   "iconUrl": "./Imgs/PreserveTubeIcon.png",
-  "version": 5,
-  "scriptSignature": "I4Cmydm6oZS26uAdA3nK+XMkomragO9zHFGIp5qA/zIatVxPzLOouKAMRitJGtiYktea33Cx3npS5oCVj3ebO7HmFNfGPqX5qMc3u/7mSky1AXXGZqjqRrRQyuTLxKGXlsbdyis63vTU4X4e8lyWAVspjjeIema+rIk8RER34tiHOTo+8xPWcqZiN1w7uxy/JkkYjMueJ2wvUOP6bQ9vqpYCidX645BXkFO9MAcHVxA9/zRXPzrmKp9Ijd90CtMx/9BqazLVzODDkzMt7umqsPUKHX/6ptjK/zYbb2y89Wyfm2w/J853P88jCvKPqOr3wwMfVPQSz+cnD2XwK10C3A==",
+  "version": 6,
+  "scriptSignature": "fVDtNkUcNLbzvy0eIFrpkH7EfUdICw9nczVObn6lB37WPgnrgYTWWWdzkewsrYeQyuD19KwGN/v+A73FBTTVRovtFejmLhDKG10cN8IF6LaDlJK/z0H/xFMdFAXHGp3Q47RDQ/rqjqHA0OSWQiM72wPzDBqNgKVAnVPVV8cKdyWnvJsZS5eGStc9h+oT6SkYmPLxCSOinwR1NrHiO02ePMDF55/lBKZe5Raq6wY93ij/8P25YnIlBdmGok9wDWxsVT0okENgU6+KjrQ9GWIY0yjsUvXIwIrH8SqjEBcPspUYybvjZNvjSxGP+uJM1fRDiHsNaCtK9YJNi04ul7myVg==",
   "scriptPublicKey": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAtwo1/yQ2mfRRAt9zIoU134jom/fwIl02cH36Uy/D9viN9pGCfCBtI2pYyng8hqPZDqZkN5Bv6+aD0w1Ei2FUdX7dqiEByciUqWMbKfd8oDyr/vwPA9ajTy7BkOkjEXloxk/zvKMl/2MDcVA3+Zwt3dmampWBooXHehLROgwrQyTXCSjP7PjPv7MZwE0afsrt0UgpctYgQ3Sj/5r+kYWTBsLp7IXcHyltfXDixVFAsOUKlxkmXO10UTtSRz5y0EFy9iNhfrxwCQy0+d6mr28xOW43+hByztXrHh9On4sniNP+p9VxTz7ZfXV5WTRWOuQUzUeek/a0fj9mKu4r3kqerwIDAQAB",
   "packages": [
     "Http",
@@ -52,6 +52,9 @@
       "Fixed channel avatar parsing from yt3.googleusercontent.com",
       "Rewrote parseVideoCardsFromHtml with proper depth counting",
       "Added searchChannels support"
+    ],
+    "6": [
+      "Improved channel fetching"
     ]
   }
 }

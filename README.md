@@ -29,12 +29,13 @@ Contributions are welcome, feel free to submit pull requests if you think you ca
 
 ### Signing
 ```bash
+# This code is designed to be run in VSCode's terminal on Linux
 # Generate keypair
 ssh-keygen -t rsa -b 2048 -m PEM -f ./private-key.pem
 
 # Encode it in Base64 and set the environment variable
 export SIGNING_PRIVATE_KEY="$(base64 -w 0 ./private-key.pem)"
 
-# Run the sign script (use git bash on Windows):
+# Run the sign script:
 sh ./sign-script.sh ./PreserveTubeScript.js ./PreserveTubeConfig.json
 ```
