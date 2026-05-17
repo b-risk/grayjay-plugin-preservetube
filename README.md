@@ -6,7 +6,7 @@ This plugin adds support for the platform [PreserveTube](https://preservetube.co
 
 ### Installation
 You can install the plugin by scanning this QR code:  
-![QR Code](https://raw.githubusercontent.com/b-risk/grayjay-plugin-preservetube/refs/heads/main/Imgs/qr-code.png)
+![QR Code](https://raw.githubusercontent.com/b-risk/grayjay-plugin-preservetube/refs/heads/master/Imgs/qr-code.png)
 
 Alternatively, you can add it manually by using this link:
 ```
