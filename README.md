@@ -1,4 +1,4 @@
-> [!NOTE
+> [!NOTE]
 > This plugin is a fork and rewrite of [Stefan Cruz's plugin](https://stefancruz.github.io/grayjay-plugin-preservetube), with features added such as redirection to preserved videos, channel separation and web scraping. By default the plugin only handles YouTube URLs if there is an archived version and if not then it doesn't claim the URL causing the videos to fallback to the YouTube version, this behavior can be changed in the settings but it's recommended to keep it disabled as PreserveTube asks users to only archive videos worth archiving long term. It is recommended to put this plugin over the YouTube plugin in the sources area for the best experience, in the future this will be expanded if Polycentric is opened to combining video sources directly.
 
 ### Grayjay PreserveTube
