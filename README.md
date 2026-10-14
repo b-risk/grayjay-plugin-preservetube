@@ -1,8 +1,6 @@
 > [!NOTE]
-> This plugin is a fork and rewrite of [Stefan Cruz's plugin](https://stefancruz.github.io/grayjay-plugin-preservetube)
-> By default the plugin will YouTube URLs only if there is an archived version avaiable,
-> this plugin also supports archiving videos but is disabled by default to prevent abuse.
-> It is recommended to put this plugin over the YouTube plugin in the sources tab for the best experience.
+> This plugin is a fork and rewrite of [Stefan Cruz's plugin](https://stefancruz.github.io/grayjay-plugin-preservetube).
+> By default the plugin will redirect YouTube URLs if there is an archived version available so you are able to put the plugin over the YouTube plugin so it takes priority, this plugin also supports archiving unarchived videos but is disabled by default to prevent abuse.
 
 ### Grayjay PreserveTube
 This plugin adds support for the platform [PreserveTube](https://preservetube.com/), allowing you to view archived YouTube videos in Grayjay.
