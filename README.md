@@ -1,5 +1,8 @@
 > [!NOTE]
-> This plugin is a fork and rewrite of [Stefan Cruz's plugin](https://stefancruz.github.io/grayjay-plugin-preservetube), with features added such as redirection to preserved videos, channel separation and web scraping. By default the plugin only handles YouTube URLs if there is an archived version and if not then it doesn't claim the URL causing the videos to fallback to the YouTube version, this behavior can be changed in the settings but it's recommended to keep it disabled as PreserveTube asks users to only archive videos worth archiving long term. It is recommended to put this plugin over the YouTube plugin in the sources area for the best experience, in the future this will be expanded if Polycentric is opened to combining video sources directly.
+> This plugin is a fork and rewrite of [Stefan Cruz's plugin](https://stefancruz.github.io/grayjay-plugin-preservetube)
+> By default the plugin will YouTube URLs only if there is an archived version avaiable,
+> this plugin also supports archiving videos but is disabled by default to prevent abuse.
+> It is recommended to put this plugin over the YouTube plugin in the sources tab for the best experience.
 
 ### Grayjay PreserveTube
 This plugin adds support for the platform [PreserveTube](https://preservetube.com/), allowing you to view archived YouTube videos in Grayjay.
@@ -24,9 +27,6 @@ grayjay://plugin/https://raw.githubusercontent.com/b-risk/grayjay-plugin-preserv
 - [x] Archiving prompt for unarchived YouTube videos (optional, off by default)
 - [x] Retry logic with toast notifications when PreserveTube is unresponsive
 
-### Contributions
-Contributions are welcome, feel free to submit pull requests if you think you can improve something or fix a bug.
-
 ### Signing
 ```bash
 # Linux commands (may generate different keys depending on the platform)
@@ -40,3 +40,7 @@ export SIGNING_PRIVATE_KEY="$(base64 -w 0 ./Signatures/private-key.pem)"
 # Run the sign script:
 sh ./sign-script.sh ./PreserveTubeScript.js ./PreserveTubeConfig.json
 ```
+
+### Contributions & AI Disclosure
+Contributions are welcome, feel free to submit pull requests if you think you can improve something or fix a bug.
+LLM assisted code is responsibly used during development, code is vetted manually for quality.
